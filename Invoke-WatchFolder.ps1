@@ -15,8 +15,8 @@
       3. If the file FAILS   — writes a JSON validation report beside the file
          in the errors folder, then moves the file itself there so it is
          quarantined and never reaches the import step.
-    4. Prints a colour-coded batch summary to the console and, optionally,
-       writes a machine-readable JSON batch summary.
+      4. Prints a colour-coded batch summary to the console and, optionally,
+         writes a machine-readable JSON batch summary.
 
     Multiple watch folders on the same server can each be configured with their
     own -RulesFile, so different import schemas are handled independently.
@@ -352,12 +352,12 @@ foreach ($file in $candidateFiles) {
     # --- Per-file console output ---
     if (-not $Quiet) {
         if ($filePassed) {
-            Write-Host "    [PASS] $fileName ($recordCount fields checked, $errorCount errors, $warningCount warnings)" `
+            Write-Host "    [PASS] $fileName ($recordCount records checked, $errorCount errors, $warningCount warnings)" `
                 -ForegroundColor Green
         } else {
             Write-Host "    [FAIL] $fileName — $errorCount error(s), $warningCount warning(s) — moved to errors folder" `
                 -ForegroundColor Red
-            if ($violations.Count -gt 0 -and -not $Quiet) {
+            if ($violations.Count -gt 0) {
                 foreach ($v in ($violations | Select-Object -First 5)) {
                     $loc = if ($v.Line -gt 0) { " [Line $($v.Line)]" } else { '' }
                     Write-Host "           [$($v.Severity)] $($v.RuleName)$loc — $($v.Path): $($v.Message)" `
