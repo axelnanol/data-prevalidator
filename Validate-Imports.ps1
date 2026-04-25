@@ -92,7 +92,7 @@ $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 
 foreach ($module in @('Parser.Csv', 'Parser.Xml', 'Rules.Engine', 'Reporter')) {
-    $modulePath = Join-Path $scriptRoot "Modules\$module.ps1"
+    $modulePath = [System.IO.Path]::Combine($scriptRoot, 'Modules', "$module.ps1")
     if (-not (Test-Path -LiteralPath $modulePath)) {
         Write-Error "Required module not found: $modulePath"
         exit 3
@@ -210,7 +210,7 @@ try {
 $sourceFileName = Split-Path $FilePath -Leaf
 $errorCount     = @($violations | Where-Object { $_.Severity -eq 'Error'   }).Count
 $warningCount   = @($violations | Where-Object { $_.Severity -eq 'Warning' }).Count
-$passed         = $errorCount -eq 0
+$passed         = -not ($errorCount -gt 0 -or ($FailOn -eq 'Warning' -and $warningCount -gt 0))
 
 if (-not $Quiet) {
     Write-ConsoleReport `
@@ -226,7 +226,9 @@ if ($ReportPath) {
         -RecordCount $records.Count `
         -SourceFile  $sourceFileName `
         -OutputPath  $ReportPath `
-        -Passed      $passed
+        -Passed      $passed `
+        -FailOn      $FailOn `
+        -Quiet:$Quiet
 }
 
 # ---------------------------------------------------------------------------

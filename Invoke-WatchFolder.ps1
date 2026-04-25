@@ -122,7 +122,7 @@ $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 
 foreach ($module in @('Parser.Csv', 'Parser.Xml', 'Rules.Engine', 'Reporter')) {
-    $modulePath = Join-Path $scriptRoot "Modules\$module.ps1"
+    $modulePath = [System.IO.Path]::Combine($scriptRoot, 'Modules', "$module.ps1")
     if (-not (Test-Path -LiteralPath $modulePath)) {
         Write-Error "Required module not found: $modulePath"
         exit 3
@@ -211,9 +211,9 @@ Write-Host ''
 # ---------------------------------------------------------------------------
 $batchResults = [System.Collections.Generic.List[PSObject]]::new()
 
-$batchErrorCount   = 0
-$batchWarningCount = 0
-$batchPassCount    = 0
+$batchFailedFileCount = 0
+$batchWarningCount    = 0
+$batchPassCount       = 0
 
 foreach ($file in $candidateFiles) {
 
@@ -309,15 +309,41 @@ foreach ($file in $candidateFiles) {
     $fileFailed = $errorCount -gt 0 -or ($FailOn -eq 'Warning' -and $warningCount -gt 0)
     $filePassed = -not $fileFailed
 
-    # --- Write report ---
+    # --- Resolve final destination path for failing files first ---
+    # This must happen before writing the report so the report filename
+    # matches the quarantined file (even if a timestamp suffix was added for
+    # collision avoidance).
+    $movedTo  = $null
+    $destPath = $null
+    $destFileName = $fileName   # filename that the quarantined file will actually have
+
+    if ($fileFailed) {
+        if (-not (Test-Path -LiteralPath $ErrorFolder)) {
+            [System.IO.Directory]::CreateDirectory($ErrorFolder) | Out-Null
+        }
+
+        $destPath = Join-Path $ErrorFolder $fileName
+
+        # Handle name collision in error folder (append timestamp)
+        if (Test-Path -LiteralPath $destPath) {
+            $ts           = Get-Date -Format 'yyyyMMdd-HHmmss'
+            $baseName     = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+            $extension    = [System.IO.Path]::GetExtension($fileName)
+            $destFileName = "$baseName-$ts$extension"
+            $destPath     = Join-Path $ErrorFolder $destFileName
+        }
+    }
+
+    # --- Write report (derived from final destination filename to keep pairing stable) ---
     $reportDestFolder = if ($fileFailed) { $ErrorFolder } elseif ($ReportFolder) { $ReportFolder } else { $null }
 
     $reportFilePath = $null
     if ($null -ne $reportDestFolder) {
         if (-not (Test-Path -LiteralPath $reportDestFolder)) {
-            New-Item -ItemType Directory -Path $reportDestFolder -Force | Out-Null
+            [System.IO.Directory]::CreateDirectory($reportDestFolder) | Out-Null
         }
-        $reportFileName = "$([System.IO.Path]::GetFileNameWithoutExtension($fileName))-validation-report.json"
+        $reportBaseName = [System.IO.Path]::GetFileNameWithoutExtension($destFileName)
+        $reportFileName = "$reportBaseName-validation-report.json"
         $reportFilePath = Join-Path $reportDestFolder $reportFileName
 
         Export-JsonReport `
@@ -325,26 +351,13 @@ foreach ($file in $candidateFiles) {
             -RecordCount $recordCount `
             -SourceFile  $fileName `
             -OutputPath  $reportFilePath `
-            -Passed      $filePassed
+            -Passed      $filePassed `
+            -FailOn      $FailOn `
+            -Quiet:$Quiet
     }
 
     # --- Move failing file to error folder ---
-    $movedTo = $null
     if ($fileFailed) {
-        if (-not (Test-Path -LiteralPath $ErrorFolder)) {
-            New-Item -ItemType Directory -Path $ErrorFolder -Force | Out-Null
-        }
-
-        $destPath = Join-Path $ErrorFolder $fileName
-
-        # Handle name collision in error folder (append timestamp)
-        if (Test-Path -LiteralPath $destPath) {
-            $ts       = Get-Date -Format 'yyyyMMdd-HHmmss'
-            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
-            $extension = [System.IO.Path]::GetExtension($fileName)
-            $destPath = Join-Path $ErrorFolder "$baseName-$ts$extension"
-        }
-
         Move-Item -LiteralPath $filePath -Destination $destPath
         $movedTo = $destPath
     }
@@ -375,7 +388,7 @@ foreach ($file in $candidateFiles) {
     if ($filePassed) {
         $batchPassCount++
     } else {
-        $batchErrorCount++
+        $batchFailedFileCount++
         $batchWarningCount += $warningCount
     }
 
@@ -404,8 +417,8 @@ Write-Host "  Watch folder : $WatchFolder"            -ForegroundColor Gray
 Write-Host "  Files found  : $totalFiles"             -ForegroundColor Gray
 Write-Host "  Passed       : $batchPassCount"         -ForegroundColor $(if ($batchPassCount -gt 0) { 'Green' } else { 'Gray' })
 
-if ($batchErrorCount -gt 0) {
-    Write-Host "  Failed       : $batchErrorCount  (moved to $ErrorFolder)" -ForegroundColor Red
+if ($batchFailedFileCount -gt 0) {
+    Write-Host "  Failed       : $batchFailedFileCount  (moved to $ErrorFolder)" -ForegroundColor Red
 } else {
     Write-Host "  Failed       : 0"                    -ForegroundColor Green
 }
@@ -423,17 +436,17 @@ if ($BatchReportPath) {
         FailOn       = $FailOn
         TotalFiles   = $totalFiles
         PassedCount  = $batchPassCount
-        FailedCount  = $batchErrorCount
-        AllPassed    = ($batchErrorCount -eq 0)
+        FailedCount  = $batchFailedFileCount
+        AllPassed    = ($batchFailedFileCount -eq 0)
         Files        = $batchResults | Select-Object FileName, Format, Passed, RecordCount, ErrorCount, WarningCount, ViolationCount, MovedTo, ReportPath
     }
 
     $batchReportDir = Split-Path $BatchReportPath -Parent
     if ($batchReportDir -and -not (Test-Path -LiteralPath $batchReportDir)) {
-        New-Item -ItemType Directory -Path $batchReportDir -Force | Out-Null
+        [System.IO.Directory]::CreateDirectory($batchReportDir) | Out-Null
     }
 
-    $batchReport | ConvertTo-Json -Depth 10 | Set-Content -Path $BatchReportPath -Encoding UTF8
+    $batchReport | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $BatchReportPath -Encoding UTF8
     Write-Host "  Batch report saved: $BatchReportPath" -ForegroundColor DarkGray
     Write-Host ''
 }
@@ -441,7 +454,7 @@ if ($BatchReportPath) {
 # ---------------------------------------------------------------------------
 # Exit code
 # ---------------------------------------------------------------------------
-if ($batchErrorCount -gt 0) {
+if ($batchFailedFileCount -gt 0) {
     exit 2
 }
 

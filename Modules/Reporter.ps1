@@ -99,14 +99,21 @@ function Export-JsonReport {
     .PARAMETER OutputPath
         Destination path for the JSON file.
     .PARAMETER Passed
-        Boolean indicating whether validation passed (no errors).
+        Boolean indicating whether validation passed at the supplied FailOn threshold.
+    .PARAMETER FailOn
+        The severity threshold that was used to determine Passed (e.g. 'Error' or 'Warning').
+        Included in the report so automation can interpret Passed consistently with the exit code.
+    .PARAMETER Quiet
+        When set, suppresses the "Report saved" console message.
     #>
     param(
         [Parameter(Mandatory = $false)] [AllowNull()] [array] $Violations = @(),
         [Parameter(Mandatory)] [int]     $RecordCount,
         [Parameter(Mandatory)] [string]  $SourceFile,
         [Parameter(Mandatory)] [string]  $OutputPath,
-        [Parameter(Mandatory)] [bool]    $Passed
+        [Parameter(Mandatory)] [bool]    $Passed,
+        [Parameter(Mandatory = $false)] [string] $FailOn = 'Error',
+        [Parameter(Mandatory = $false)] [switch] $Quiet
     )
 
     $report = [PSCustomObject]@{
@@ -114,6 +121,7 @@ function Export-JsonReport {
         SourceFile       = $SourceFile
         RecordsValidated = $RecordCount
         Passed           = $Passed
+        FailOn           = $FailOn
         ViolationCount   = $Violations.Count
         ErrorCount       = @($Violations | Where-Object { $_.Severity -eq 'Error'   }).Count
         WarningCount     = @($Violations | Where-Object { $_.Severity -eq 'Warning' }).Count
@@ -123,9 +131,12 @@ function Export-JsonReport {
 
     $outputDir = Split-Path $OutputPath -Parent
     if ($outputDir -and -not (Test-Path -LiteralPath $outputDir)) {
-        New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+        [System.IO.Directory]::CreateDirectory($outputDir) | Out-Null
     }
 
-    $report | ConvertTo-Json -Depth 10 | Set-Content -Path $OutputPath -Encoding UTF8
-    Write-Host "  Report saved: $OutputPath" -ForegroundColor DarkGray
+    $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $OutputPath -Encoding UTF8
+
+    if (-not $Quiet) {
+        Write-Host "  Report saved: $OutputPath" -ForegroundColor DarkGray
+    }
 }
