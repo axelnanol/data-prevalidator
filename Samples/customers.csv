@@ -1,0 +1,8 @@
+CustomerID,FirstName,LastName,Email,Status,DateOfBirth,Age,ContactMethod,Phone
+CUST-000001,Alice,Johnson,alice.johnson@example.com,Active,1985-03-12,39,Email,
+CUST-000002,Bob,Smith,bob.smith@example.com,Inactive,1972-11-04,53,Phone,+44 1234 567890
+CUST-000003,Carol,Williams,carol.williams@example.com,Pending,1990-06-15,35,Email,
+CUST-000004,,Brown,no-at-sign,Active,1965-01-30,61,Phone,
+CUST-000005,Eve,Taylor,eve.taylor@example.com,Deleted,1988-07-22,37,Email,
+CUST-000001,Frank,Davies,frank.davies@example.com,Active,not-a-date,999,Email,
+CUST-000007,Grace,Evans,grace@example.com,Active,2001-12-05,24,Phone,+44 9876 543210

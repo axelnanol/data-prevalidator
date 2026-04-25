@@ -1,0 +1,130 @@
+{
+  "rules": [
+    {
+      "name": "OrdersRootExists",
+      "description": "The XML document must contain an Orders root element.",
+      "format": "xml",
+      "type": "XPathExists",
+      "target": "/Orders",
+      "severity": "Error",
+      "message": "The root <Orders> element must exist in the XML document."
+    },
+    {
+      "name": "OrderElementExists",
+      "description": "There must be at least one Order element.",
+      "format": "xml",
+      "type": "XPathExists",
+      "target": "/Orders/Order",
+      "severity": "Error",
+      "message": "At least one <Order> element must exist under <Orders>."
+    },
+    {
+      "name": "OrderIdRequired",
+      "description": "Every Order element must have an id attribute.",
+      "format": "xml",
+      "target": "/Orders/Order/@id",
+      "type": "Required",
+      "severity": "Error",
+      "message": "The Order id attribute is required and must not be blank."
+    },
+    {
+      "name": "OrderIdFormat",
+      "description": "Order ID must follow the pattern ORD-XXXXXX.",
+      "format": "xml",
+      "target": "/Orders/Order/@id",
+      "type": "Regex",
+      "pattern": "^ORD-[0-9]{6}$",
+      "severity": "Error",
+      "message": "Order id must match the pattern ORD-XXXXXX (e.g. ORD-000001)."
+    },
+    {
+      "name": "OrderIdUnique",
+      "description": "Order IDs must be unique within the import file.",
+      "format": "xml",
+      "target": "/Orders/Order/@id",
+      "type": "Unique",
+      "severity": "Error",
+      "message": "Order id must be unique — duplicate value detected."
+    },
+    {
+      "name": "OrderStatusRequired",
+      "description": "Every Order must have a Status element.",
+      "format": "xml",
+      "target": "/Orders/Order/Status",
+      "type": "Required",
+      "severity": "Error",
+      "message": "The <Status> element is required on every Order."
+    },
+    {
+      "name": "OrderStatusAllowedValues",
+      "description": "Order status must be one of the permitted values.",
+      "format": "xml",
+      "target": "/Orders/Order/Status",
+      "type": "AllowedValues",
+      "values": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+      "caseSensitive": false,
+      "severity": "Error",
+      "message": "Order Status must be one of: Pending, Processing, Shipped, Delivered, Cancelled."
+    },
+    {
+      "name": "CustomerNameRequired",
+      "description": "Every Order must have a CustomerName element.",
+      "format": "xml",
+      "target": "/Orders/Order/CustomerName",
+      "type": "Required",
+      "severity": "Error",
+      "message": "The <CustomerName> element is required on every Order."
+    },
+    {
+      "name": "CustomerNameMinLength",
+      "description": "Customer name must be at least 2 characters.",
+      "format": "xml",
+      "target": "/Orders/Order/CustomerName",
+      "type": "MinLength",
+      "min": 2,
+      "severity": "Warning",
+      "message": "CustomerName must be at least 2 characters long."
+    },
+    {
+      "name": "TotalAmountRequired",
+      "description": "Every Order must have a TotalAmount element.",
+      "format": "xml",
+      "target": "/Orders/Order/TotalAmount",
+      "type": "Required",
+      "severity": "Error",
+      "message": "The <TotalAmount> element is required on every Order."
+    },
+    {
+      "name": "TotalAmountNumericRange",
+      "description": "Order total must be a positive number not exceeding 1,000,000.",
+      "format": "xml",
+      "target": "/Orders/Order/TotalAmount",
+      "type": "NumericRange",
+      "min": 0.01,
+      "max": 1000000,
+      "severity": "Error",
+      "message": "TotalAmount must be a positive number no greater than 1,000,000."
+    },
+    {
+      "name": "OrderDateFormat",
+      "description": "Order date must be in ISO 8601 date format.",
+      "format": "xml",
+      "target": "/Orders/Order/OrderDate",
+      "type": "DateFormat",
+      "dateFormat": "yyyy-MM-dd",
+      "severity": "Error",
+      "message": "OrderDate must be in yyyy-MM-dd format (e.g. 2026-01-31)."
+    },
+    {
+      "name": "CurrencyCodeAllowedValues",
+      "description": "Currency code must be a supported ISO 4217 code.",
+      "format": "xml",
+      "target": "/Orders/Order/@currency",
+      "type": "AllowedValues",
+      "values": ["GBP", "USD", "EUR", "CAD", "AUD"],
+      "caseSensitive": true,
+      "severity": "Warning",
+      "message": "Currency must be one of the supported codes: GBP, USD, EUR, CAD, AUD."
+    }
+  ]
+}

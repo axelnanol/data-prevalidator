@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Orders>
+  <Order id="ORD-000001" currency="GBP">
+    <CustomerName>Alice Johnson</CustomerName>
+    <Status>Pending</Status>
+    <OrderDate>2026-04-01</OrderDate>
+    <TotalAmount>149.99</TotalAmount>
+  </Order>
+  <Order id="ORD-000002" currency="USD">
+    <CustomerName>Bob Smith</CustomerName>
+    <Status>Shipped</Status>
+    <OrderDate>2026-04-05</OrderDate>
+    <TotalAmount>289.50</TotalAmount>
+  </Order>
+  <Order id="BAD-ID" currency="XYZ">
+    <CustomerName>C</CustomerName>
+    <Status>Unknown</Status>
+    <OrderDate>05/04/2026</OrderDate>
+    <TotalAmount>-10</TotalAmount>
+  </Order>
+  <Order id="ORD-000001" currency="EUR">
+    <CustomerName>Duplicate Order ID</CustomerName>
+    <Status>Processing</Status>
+    <OrderDate>2026-04-10</OrderDate>
+    <TotalAmount>99.00</TotalAmount>
+  </Order>
+  <Order id="ORD-000005" currency="GBP">
+    <CustomerName>Eve Taylor</CustomerName>
+    <Status>Delivered</Status>
+    <OrderDate>2026-03-28</OrderDate>
+    <TotalAmount>512.00</TotalAmount>
+  </Order>
+</Orders>
