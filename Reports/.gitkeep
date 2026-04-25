@@ -1,0 +1,3 @@
+This directory holds generated validation reports.
+
+Report files (*.json, *.html, *.csv) are excluded from version control via .gitignore.

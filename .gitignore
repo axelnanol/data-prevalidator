@@ -1,0 +1,17 @@
+# Generated reports
+Reports/*.json
+Reports/*.html
+Reports/*.csv
+!Reports/.gitkeep
+
+# PowerShell session files
+*.pssc
+
+# Editor / OS artefacts
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Test output
+TestResults/

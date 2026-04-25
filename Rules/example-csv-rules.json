@@ -1,0 +1,151 @@
+{
+  "rules": [
+    {
+      "name": "CustomerIDRequired",
+      "description": "Every record must have a CustomerID.",
+      "format": "csv",
+      "target": "CustomerID",
+      "type": "Required",
+      "severity": "Error",
+      "message": "CustomerID is required and must not be blank."
+    },
+    {
+      "name": "CustomerIDUnique",
+      "description": "CustomerID must be unique across all import rows.",
+      "format": "csv",
+      "target": "CustomerID",
+      "type": "Unique",
+      "severity": "Error",
+      "message": "CustomerID must be unique — duplicate value detected."
+    },
+    {
+      "name": "CustomerIDRegex",
+      "description": "CustomerID must follow the pattern CUST-XXXXXX.",
+      "format": "csv",
+      "target": "CustomerID",
+      "type": "Regex",
+      "pattern": "^CUST-[0-9]{6}$",
+      "severity": "Error",
+      "message": "CustomerID must match the pattern CUST-XXXXXX (e.g. CUST-000001)."
+    },
+    {
+      "name": "FirstNameRequired",
+      "description": "First name must be provided.",
+      "format": "csv",
+      "target": "FirstName",
+      "type": "Required",
+      "severity": "Error",
+      "message": "FirstName is required and must not be blank."
+    },
+    {
+      "name": "FirstNameMinLength",
+      "description": "First name must be at least 2 characters.",
+      "format": "csv",
+      "target": "FirstName",
+      "type": "MinLength",
+      "min": 2,
+      "severity": "Warning",
+      "message": "FirstName must be at least 2 characters long."
+    },
+    {
+      "name": "LastNameRequired",
+      "description": "Last name must be provided.",
+      "format": "csv",
+      "target": "LastName",
+      "type": "Required",
+      "severity": "Error",
+      "message": "LastName is required and must not be blank."
+    },
+    {
+      "name": "LastNameMaxLength",
+      "description": "Last name must not exceed 100 characters.",
+      "format": "csv",
+      "target": "LastName",
+      "type": "MaxLength",
+      "max": 100,
+      "severity": "Warning",
+      "message": "LastName must not exceed 100 characters."
+    },
+    {
+      "name": "EmailRequired",
+      "description": "Email address must be provided.",
+      "format": "csv",
+      "target": "Email",
+      "type": "Required",
+      "severity": "Error",
+      "message": "Email is required and must not be blank."
+    },
+    {
+      "name": "EmailFormat",
+      "description": "Email must be a valid email address.",
+      "format": "csv",
+      "target": "Email",
+      "type": "Regex",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "severity": "Error",
+      "message": "Email must be a valid email address (e.g. user@example.com)."
+    },
+    {
+      "name": "StatusRequired",
+      "description": "Status must be provided.",
+      "format": "csv",
+      "target": "Status",
+      "type": "Required",
+      "severity": "Error",
+      "message": "Status is required and must not be blank."
+    },
+    {
+      "name": "StatusAllowedValues",
+      "description": "Status must be one of the permitted values.",
+      "format": "csv",
+      "target": "Status",
+      "type": "AllowedValues",
+      "values": ["Active", "Inactive", "Pending"],
+      "caseSensitive": false,
+      "severity": "Error",
+      "message": "Status must be one of: Active, Inactive, Pending."
+    },
+    {
+      "name": "StatusNotDeleted",
+      "description": "The value 'Deleted' is not permitted in import files.",
+      "format": "csv",
+      "target": "Status",
+      "type": "ForbiddenValue",
+      "value": "Deleted",
+      "severity": "Warning",
+      "message": "Status 'Deleted' is not permitted in import files — use 'Inactive' instead."
+    },
+    {
+      "name": "DateOfBirthFormat",
+      "description": "Date of birth must be in ISO 8601 date format.",
+      "format": "csv",
+      "target": "DateOfBirth",
+      "type": "DateFormat",
+      "dateFormat": "yyyy-MM-dd",
+      "severity": "Error",
+      "message": "DateOfBirth must be in yyyy-MM-dd format (e.g. 1990-06-15)."
+    },
+    {
+      "name": "AgeRange",
+      "description": "Age must be a plausible value between 0 and 130.",
+      "format": "csv",
+      "target": "Age",
+      "type": "NumericRange",
+      "min": 0,
+      "max": 130,
+      "severity": "Error",
+      "message": "Age must be a number between 0 and 130."
+    },
+    {
+      "name": "PhoneRequiredWhenContactMethodIsPhone",
+      "description": "Phone number is required when the contact method is 'Phone'.",
+      "format": "csv",
+      "target": "Phone",
+      "type": "DependsOn",
+      "dependsOnField": "ContactMethod",
+      "dependsOnValue": "Phone",
+      "severity": "Error",
+      "message": "Phone is required when ContactMethod is 'Phone'."
+    }
+  ]
+}
