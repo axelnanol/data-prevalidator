@@ -16,7 +16,8 @@ Failures are reported with enough context (file name, path, offending value, rul
 
 ```
 .
-├── Validate-Imports.ps1          # CLI entry point
+├── Validate-Imports.ps1          # Single-file validator (CLI entry point)
+├── Invoke-WatchFolder.ps1        # Watch folder batch validator
 ├── Modules/
 │   ├── Parser.Csv.ps1            # CSV adapter
 │   ├── Parser.Xml.ps1            # XML adapter
@@ -273,6 +274,96 @@ Set-Location data-prevalidator
 ```
 
 ---
+
+---
+
+## Watch folder workflow
+
+`Invoke-WatchFolder.ps1` is designed to sit at the start of an automated import workflow. Third parties drop files into a **watch folder**; this script validates everything in that folder, quarantines failing files to an `errors` sub-folder (with a validation report alongside each one), and lets passing files continue to the downstream import step.
+
+### Typical server layout
+
+```
+C:\Imports\
+├── Invoices\               ← watch folder
+│   ├── invoice-001.csv      ← dropped by third party
+│   ├── invoice-002.csv      ← dropped by third party
+│   ├── rules\
+│   │   └── invoice-rules.json
+│   └── errors\             ← created automatically; failing files land here
+│       ├── invoice-003.csv
+│       └── invoice-003-validation-report.json
+├── CustomerData\           ← second watch folder with its own schema
+│   ├── rules\
+│   │   └── customer-rules.json
+│   └── errors\
+└── Orders\                 ← third watch folder
+    ├── rules\
+    │   └── order-rules.json
+    └── errors\
+```
+
+### Usage
+
+```powershell
+# Process all files in a watch folder (errors sub-folder created automatically)
+.\Invoke-WatchFolder.ps1 `
+    -WatchFolder C:\Imports\Invoices `
+    -RulesFile   C:\Imports\Invoices\rules\invoice-rules.json
+
+# Specify a custom error folder and save a batch summary
+.\Invoke-WatchFolder.ps1 `
+    -WatchFolder     C:\Imports\CustomerData `
+    -RulesFile       C:\Schemas\customer-rules.json `
+    -ErrorFolder     C:\Quarantine\CustomerData `
+    -BatchReportPath C:\Logs\customer-$(Get-Date -Format 'yyyyMMdd-HHmmss').json
+
+# Quiet mode — only the summary line and exit code (automation-friendly)
+.\Invoke-WatchFolder.ps1 `
+    -WatchFolder C:\Imports\Orders `
+    -RulesFile   C:\Schemas\order-rules.json `
+    -Quiet
+```
+
+### `Invoke-WatchFolder.ps1` parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `-WatchFolder` | String | ✔ | — | Folder to scan for import files |
+| `-RulesFile` | String | ✔ | — | JSON rules file for this folder's schema |
+| `-ErrorFolder` | String | | `<WatchFolder>\errors` | Destination for failing files and their reports |
+| `-ReportFolder` | String | | — | If set, writes JSON reports for passing files too (audit trail) |
+| `-BatchReportPath` | String | | — | Path for a JSON summary of the entire batch run |
+| `-FilePattern` | String | | `csv,xml` | Comma-separated extensions to process |
+| `-FailOn` | String | | `Error` | Severity threshold for quarantine: `Error` or `Warning` |
+| `-Quiet` | Switch | | off | Suppress per-file output (batch summary still shown) |
+
+### What happens to each file
+
+| Validation result | File | Report |
+|-------------------|------|--------|
+| **Pass** | Left in watch folder; downstream workflow imports it | Written to `-ReportFolder` only if that parameter is set |
+| **Fail** | **Moved** to `errors` folder | Written alongside the failed file in `errors` folder |
+
+### Inserting into an existing automation workflow
+
+Find the step in your workflow where it iterates the watch folder and begins importing.  Add a call to `Invoke-WatchFolder.ps1` **before** that iteration.  Because failing files are moved out of the watch folder before your import loop starts, you can leave the rest of the workflow unchanged.
+
+```powershell
+# --- Step 1: Pre-validate (add this) ---
+.\Invoke-WatchFolder.ps1 `
+    -WatchFolder $WatchFolderPath `
+    -RulesFile   $SchemaPath `
+    -ErrorFolder $ErrorFolderPath `
+    -FailOn      Error
+
+# --- Step 2: Import (unchanged) ---
+Get-ChildItem -Path $WatchFolderPath -Filter *.csv | ForEach-Object {
+    Import-CsvToSystem -FilePath $_.FullName
+}
+```
+
+On-Call / Support can inspect `errors\` after any run — each failed file is accompanied by a `*-validation-report.json` that shows every violation with file name, path, offending value, rule, and line number.
 
 ## Adding your own rules
 
